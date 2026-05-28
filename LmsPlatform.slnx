@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="LmsPlatform.App/LmsPlatform.App.csproj" />
+  <Project Path="LmsPlatform.Domain/LmsPlatform.Domain.csproj" />
+  <Project Path="LmsPlatform.Tests/LmsPlatform.Tests.csproj" />
+</Solution>
