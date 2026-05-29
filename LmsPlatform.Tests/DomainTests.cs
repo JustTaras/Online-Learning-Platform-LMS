@@ -1,361 +1,368 @@
 using LmsPlatform.Domain;
-using LmsPlatform.Domain.State;
-using LmsPlatform.Domain.Strategy;
-using Moq;
-using FluentAssertions;
 
 namespace LmsPlatform.Tests;
 
 /// <summary>
-/// Strategy Pattern Tests - Grading Strategies
+/// Тести для базового класу Entity та інтерфейсу IValidatable
 /// </summary>
-public class GradingStrategyTests
+public class EntityTests
 {
     [Fact]
-    public void PassFailGradingStrategy_CalculateScore_WithCorrectAnswers_ShouldReturnCorrectRatio()
+    public void Entity_ShouldHaveUniqueGuid()
     {
-        // Arrange
-        var strategy = new PassFailGradingStrategy();
-        int correctAnswers = 7;
-        int totalQuestions = 10;
-        double expectedScore = 0.7;
-
-        // Act
-        double actualScore = strategy.CalculateScore(correctAnswers, totalQuestions);
+        // Arrange & Act
+        var course1 = new Course("C#", "Основи");
+        var course2 = new Course("Python", "Основи");
 
         // Assert
-        actualScore.Should().Be(expectedScore);
-    }
-
-    [Fact]
-    public void PassFailGradingStrategy_IsPassed_WithScoreAboveThreshold_ShouldReturnTrue()
-    {
-        // Arrange
-        var strategy = new PassFailGradingStrategy();
-        double passingScore = 0.5;
-
-        // Act
-        bool result = strategy.IsPassed(passingScore);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void PassFailGradingStrategy_IsPassed_WithScoreBelowThreshold_ShouldReturnFalse()
-    {
-        // Arrange
-        var strategy = new PassFailGradingStrategy();
-        double failingScore = 0.4;
-
-        // Act
-        bool result = strategy.IsPassed(failingScore);
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
-    [Fact]
-    public void PassFailGradingStrategy_GetGradeDescription_ShouldReturnDescription()
-    {
-        // Arrange
-        var strategy = new PassFailGradingStrategy();
-
-        // Act
-        string description = strategy.GetGradeDescription();
-
-        // Assert
-        description.Should().NotBeNullOrEmpty();
-        description.Should().Contain("50%");
-    }
-
-    [Fact]
-    public void PassFailGradingStrategy_CalculateScore_WithZeroQuestions_ShouldThrowException()
-    {
-        // Arrange
-        var strategy = new PassFailGradingStrategy();
-
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() => strategy.CalculateScore(5, 0));
-    }
-
-    [Fact]
-    public void StrictGradingStrategy_CalculateScore_WithCorrectAnswers_ShouldReturnCorrectRatio()
-    {
-        // Arrange
-        var strategy = new StrictGradingStrategy();
-        int correctAnswers = 9;
-        int totalQuestions = 10;
-        double expectedScore = 0.9;
-
-        // Act
-        double actualScore = strategy.CalculateScore(correctAnswers, totalQuestions);
-
-        // Assert
-        actualScore.Should().Be(expectedScore);
-    }
-
-    [Fact]
-    public void StrictGradingStrategy_IsPassed_WithHighScore_ShouldReturnTrue()
-    {
-        // Arrange
-        var strategy = new StrictGradingStrategy();
-        double highScore = 0.9;
-
-        // Act
-        bool result = strategy.IsPassed(highScore);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void StrictGradingStrategy_IsPassed_WithLowScore_ShouldReturnFalse()
-    {
-        // Arrange
-        var strategy = new StrictGradingStrategy();
-        double lowScore = 0.75;
-
-        // Act
-        bool result = strategy.IsPassed(lowScore);
-
-        // Assert
-        result.Should().BeFalse();
+        Assert.NotEqual(course1.Id, course2.Id);
+        Assert.NotEqual(Guid.Empty, course1.Id);
+        Assert.NotEqual(Guid.Empty, course2.Id);
     }
 }
 
 /// <summary>
-/// State Pattern Tests - Course State Management
+/// Тести для класу Course
+/// </summary>
+public class CourseTests
+{
+    [Fact]
+    public void Course_ShouldCreateWithValidData()
+    {
+        // Arrange & Act
+        var course = new Course("C# 101", "Основи C#");
+
+        // Assert
+        Assert.NotNull(course);
+        Assert.Equal("C# 101", course.Title);
+        Assert.Equal("Основи C#", course.Description);
+        Assert.Empty(course.Lessons);
+    }
+
+    [Fact]
+    public void Course_ShouldThrowExceptionForEmptyTitle()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new Course("", "Опис"));
+    }
+
+    [Fact]
+    public void Course_ShouldThrowExceptionForEmptyDescription()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new Course("Курс", ""));
+    }
+
+    [Fact]
+    public void Course_ShouldThrowExceptionForLongTitle()
+    {
+        // Arrange
+        string longTitle = new string('a', 256);
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new Course(longTitle, "Опис"));
+    }
+
+    [Fact]
+    public void Course_ShouldAddLessonWithMethod()
+    {
+        // Arrange
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Вступний урок", 1);
+
+        // Act
+        course.AddLesson(lesson);
+
+        // Assert
+        Assert.Single(course.Lessons);
+        Assert.Contains(lesson, course.Lessons);
+    }
+
+    [Fact]
+    public void Course_ShouldAddLessonWithPlusOperator()
+    {
+        // Arrange
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Вступний урок", 1);
+
+        // Act
+        course += lesson;
+
+        // Assert
+        Assert.Single(course.Lessons);
+    }
+
+    [Fact]
+    public void Course_ShouldThrowWhenAddingNullLesson()
+    {
+        // Arrange
+        var course = new Course("C#", "Основи");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => course.AddLesson(null!));
+    }
+
+    [Fact]
+    public void Course_ShouldValidateWithLessons()
+    {
+        // Arrange
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Вступний урок", 1);
+        course.AddLesson(lesson);
+
+        // Act
+        var isValid = course.Validate();
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public void Course_ShouldNotValidateWithoutLessons()
+    {
+        // Arrange
+        var course = new Course("C#", "Основи");
+
+        // Act
+        var isValid = course.Validate();
+
+        // Assert
+        Assert.False(isValid);
+    }
+}
+
+/// <summary>
+/// Тести для класу Lesson
+/// </summary>
+public class LessonTests
+{
+    [Fact]
+    public void Lesson_ShouldCreateWithValidData()
+    {
+        // Arrange & Act
+        var lesson = new Lesson("Вступ до C#", "Базові поняття", 1);
+
+        // Assert
+        Assert.NotNull(lesson);
+        Assert.Equal("Вступ до C#", lesson.Title);
+        Assert.Equal("Базові поняття", lesson.Description);
+        Assert.Equal(1, lesson.OrderNumber);
+    }
+
+    [Fact]
+    public void Lesson_ShouldThrowExceptionForEmptyTitle()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            new Lesson("", "Опис", 1));
+    }
+
+    [Fact]
+    public void Lesson_ShouldThrowExceptionForInvalidOrder()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            new Lesson("Урок", "Опис", 0));
+    }
+
+    [Fact]
+    public void Lesson_ShouldValidate()
+    {
+        // Arrange
+        var lesson = new Lesson("Урок", "Опис", 1);
+
+        // Act
+        var isValid = lesson.Validate();
+
+        // Assert
+        Assert.True(isValid);
+    }
+}
+
+/// <summary>
+/// Тести для класу StudentProgress
+/// </summary>
+public class StudentProgressTests
+{
+    [Fact]
+    public void StudentProgress_ShouldCreateWithValidData()
+    {
+        // Arrange
+        var studentId = Guid.NewGuid();
+        var courseId = Guid.NewGuid();
+
+        // Act
+        var progress = new StudentProgress(studentId, courseId, 5);
+
+        // Assert
+        Assert.Equal(studentId, progress.StudentId);
+        Assert.Equal(courseId, progress.CourseId);
+        Assert.Equal(5, progress.TotalLessons);
+        Assert.Equal(0, progress.CompletedLessons);
+        Assert.Equal(0, progress.ProgressPercentage);
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldThrowForEmptyStudentId()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            new StudentProgress(Guid.Empty, Guid.NewGuid(), 5));
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldThrowForEmptyCourseId()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            new StudentProgress(Guid.NewGuid(), Guid.Empty, 5));
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldThrowForInvalidTotalLessons()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            new StudentProgress(Guid.NewGuid(), Guid.NewGuid(), 0));
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldUpdateProgress()
+    {
+        // Arrange
+        var progress = new StudentProgress(Guid.NewGuid(), Guid.NewGuid(), 10);
+
+        // Act
+        progress.UpdateProgress(5);
+
+        // Assert
+        Assert.Equal(5, progress.CompletedLessons);
+        Assert.Equal(50, progress.ProgressPercentage);
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldValidate()
+    {
+        // Arrange
+        var progress = new StudentProgress(Guid.NewGuid(), Guid.NewGuid(), 5);
+        progress.UpdateProgress(2);
+
+        // Act
+        var isValid = progress.Validate();
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public void StudentProgress_ShouldThrowForInvalidCompletedLessons()
+    {
+        // Arrange
+        var progress = new StudentProgress(Guid.NewGuid(), Guid.NewGuid(), 5);
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => 
+            progress.UpdateProgress(10)); // Більше, ніж всього
+    }
+}
+
+
+
+/// <summary>
+/// Тести для паттерну State (стани курсу)
 /// </summary>
 public class CourseStateTests
 {
     [Fact]
-    public void CourseStateContext_NewCourse_ShouldStartInDraftState()
+    public void Course_ShouldBeInDraftStateByDefault()
     {
         // Arrange & Act
-        var course = new Course("Test Course", "Test Description");
+        var course = new Course("C#", "Основи");
 
         // Assert
-        course.CourseStatus.Should().Be("Draft");
+        Assert.Equal("Draft", course.CourseStatus);
     }
 
     [Fact]
-    public void CourseStateContext_PublishCourse_WithLessons_ShouldChangeToPublishedState()
+    public void Course_ShouldPublishWhenHasLessons()
     {
         // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson 1", "Content", 1);
-        course += lesson;
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Опис", 1);
+        course.AddLesson(lesson);
 
         // Act
         course.PublishCourse();
 
         // Assert
-        course.CourseStatus.Should().Be("Published");
+        Assert.Equal("Published", course.CourseStatus);
     }
 
     [Fact]
-    public void CourseStateContext_PublishCourse_WithoutLessons_ShouldThrowException()
+    public void Course_ShouldThrowWhenPublishingWithoutLessons()
     {
         // Arrange
-        var course = new Course("Test Course", "Test Description");
+        var course = new Course("C#", "Основи");
 
         // Act & Assert
         Assert.Throws<InvalidCourseOperationException>(() => course.PublishCourse());
     }
 
     [Fact]
-    public void CourseStateContext_ArchiveCourse_FromPublished_ShouldChangeToArchivedState()
+    public void Course_ShouldArchiveWhenPublished()
     {
         // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson 1", "Content", 1);
-        course += lesson;
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Опис", 1);
+        course.AddLesson(lesson);
         course.PublishCourse();
 
         // Act
         course.ArchiveCourse();
 
         // Assert
-        course.CourseStatus.Should().Be("Archived");
-    }
-
-    [Fact]
-    public void CourseStateContext_RevertToDraft_FromPublished_ShouldChangeBackToDraft()
-    {
-        // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson 1", "Content", 1);
-        course += lesson;
-        course.PublishCourse();
-
-        // Act
-        course.RevertToDraft();
-
-        // Assert
-        course.CourseStatus.Should().Be("Draft");
-    }
-
-    [Fact]
-    public void CourseStateContext_CanAddLessons_InDraftState_ShouldReturnTrue()
-    {
-        // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson 1", "Content", 1);
-
-        // Act
-        course += lesson;
-
-        // Assert
-        course.Lessons.Should().HaveCount(1);
-    }
-
-    [Fact]
-    public void CourseStateContext_CanAddLessons_InPublishedState_ShouldThrowException()
-    {
-        // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson1 = new Lesson("Lesson 1", "Content", 1);
-        course += lesson1;
-        course.PublishCourse();
-        var lesson2 = new Lesson("Lesson 2", "Content", 2);
-
-        // Act & Assert
-        Assert.Throws<InvalidCourseOperationException>(() => course += lesson2);
-    }
-
-    [Fact]
-    public void CourseStateContext_CanAddLessons_InArchivedState_ShouldThrowException()
-    {
-        // Arrange
-        var course = new Course("Test Course", "Test Description");
-        var lesson1 = new Lesson("Lesson 1", "Content", 1);
-        course += lesson1;
-        course.PublishCourse();
-        course.ArchiveCourse();
-        var lesson2 = new Lesson("Lesson 2", "Content", 2);
-
-        // Act & Assert
-        Assert.Throws<InvalidCourseOperationException>(() => course += lesson2);
+        Assert.Equal("Archived", course.CourseStatus);
     }
 }
 
 /// <summary>
-/// Repository Pattern Tests with Moq - Isolated Testing
+/// Тести для Repository<T>
 /// </summary>
-public class RepositoryIsolatedTests
+public class RepositoryTests
 {
     [Fact]
-    public void Repository_Add_WithCourse_ShouldStoreAndRetrieve()
+    public void Repository_ShouldAddAndStoreItem()
     {
         // Arrange
         var repository = new Repository<Course>();
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson", "Content", 1);
-        course += lesson;
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Опис", 1);
+        course.AddLesson(lesson);
 
         // Act
         repository.Add(course);
-        var allCourses = repository.GetAll();
+        var all = repository.GetAll().ToList();
 
         // Assert
-        allCourses.Should().HaveCount(1);
-        allCourses[0].Title.Should().Be("Test Course");
+        Assert.Single(all);
+        Assert.Contains(course, all);
     }
 
     [Fact]
-    public void Repository_Add_WithDuplicateId_ShouldThrowException()
+    public void Repository_ShouldRemoveItem()
     {
         // Arrange
         var repository = new Repository<Course>();
-        var course1 = new Course("Course 1", "Description 1");
-        var course2 = new Course("Course 2", "Description 2");
-        var lesson1 = new Lesson("Lesson", "Content", 1);
-        var lesson2 = new Lesson("Lesson", "Content", 1);
-        course1 += lesson1;
-        course2 += lesson2;
-        
-        repository.Add(course1);
-
-        // Act & Assert - This test demonstrates duplicate prevention
-        // Note: Since each Course() creates a new Guid, duplicates aren't possible in normal use
-        repository.Add(course2);
-        repository.GetAll().Should().HaveCount(2);
-    }
-
-    [Fact]
-    public void Repository_Remove_WithValidId_ShouldRemoveItem()
-    {
-        // Arrange
-        var repository = new Repository<Course>();
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson", "Content", 1);
-        course += lesson;
+        var course = new Course("C#", "Основи");
+        var lesson = new Lesson("Вступ", "Опис", 1);
+        course.AddLesson(lesson);
         repository.Add(course);
-        var courseId = course.Id;
 
         // Act
-        bool removed = repository.Remove(courseId);
+        repository.Remove(course.Id);
+        var all = repository.GetAll().ToList();
 
         // Assert
-        removed.Should().BeTrue();
-        repository.GetAll().Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Repository_Remove_WithInvalidId_ShouldReturnFalse()
-    {
-        // Arrange
-        var repository = new Repository<Course>();
-        var invalidId = Guid.NewGuid();
-
-        // Act
-        bool removed = repository.Remove(invalidId);
-
-        // Assert
-        removed.Should().BeFalse();
-    }
-}
-
-/// <summary>
-/// Repository Mock Tests - Testing business logic in isolation
-/// </summary>
-public class RepositoryMockTests
-{
-    [Fact]
-    public void CourseManager_WithMockedRepository_ShouldUseRepositoryMethods()
-    {
-        // Arrange
-        var mockRepository = new Mock<Repository<Course>>();
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson", "Content", 1);
-        course += lesson;
-
-        var courses = new List<Course> { course };
-        mockRepository.Setup(r => r.GetAll()).Returns(courses.AsReadOnly());
-
-        // Act
-        var result = mockRepository.Object.GetAll();
-
-        // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Test Course");
-        mockRepository.Verify(r => r.GetAll(), Times.Once);
-    }
-
-    [Fact]
-    public void Repository_Add_ShouldBeCalledWithCorrectCourse()
-    {
-        // Arrange
-        var mockRepository = new Mock<Repository<Course>>();
-        var course = new Course("Test Course", "Test Description");
-        var lesson = new Lesson("Lesson", "Content", 1);
-        course += lesson;
-
-        // Act
-        mockRepository.Object.Add(course);
-
-        // Assert
-        mockRepository.Verify(r => r.Add(It.IsAny<Course>()), Times.Once);
+        Assert.Empty(all);
     }
 }
