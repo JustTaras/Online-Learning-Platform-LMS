@@ -1,5 +1,7 @@
 namespace LmsPlatform.Domain;
 
+using LmsPlatform.Domain.State;
+
 /// <summary>
 /// Сутність "Курс"
 /// </summary>
@@ -8,6 +10,7 @@ public class Course : Entity, IValidatable
     private string _title = string.Empty;
     private string _description = string.Empty;
     private List<Lesson> _lessons = new();
+    private CourseStateContext _stateContext;
 
     /// <summary>
     /// Назва курсу
@@ -48,6 +51,16 @@ public class Course : Entity, IValidatable
     public IReadOnlyList<Lesson> Lessons => _lessons.AsReadOnly();
 
     /// <summary>
+    /// Поточний стан курсу
+    /// </summary>
+    public string CourseStatus => _stateContext.CurrentState.StateName;
+
+    /// <summary>
+    /// Контекст стану курсу
+    /// </summary>
+    public CourseStateContext StateContext => _stateContext;
+
+    /// <summary>
     /// Конструктор курсу
     /// </summary>
     public Course(string title, string description)
@@ -55,6 +68,7 @@ public class Course : Entity, IValidatable
         Title = title;
         Description = description;
         _lessons = new List<Lesson>();
+        _stateContext = new CourseStateContext();
     }
 
     /// <summary>
@@ -62,6 +76,9 @@ public class Course : Entity, IValidatable
     /// </summary>
     public void AddLesson(Lesson lesson)
     {
+        if (!_stateContext.CanAddLessons())
+            throw new InvalidCourseOperationException($"Не можна додавати уроки у стані {CourseStatus}.");
+        
         if (lesson == null)
             throw new ArgumentNullException(nameof(lesson), "Урок не може бути null.");
         
@@ -69,6 +86,33 @@ public class Course : Entity, IValidatable
             throw new ArgumentException("Урок не проходить валідацію.", nameof(lesson));
         
         _lessons.Add(lesson);
+    }
+
+    /// <summary>
+    /// Публікує курс
+    /// </summary>
+    public void PublishCourse()
+    {
+        if (_lessons.Count == 0)
+            throw new InvalidCourseOperationException("Не можна публікувати курс без уроків.");
+        
+        _stateContext.PublishCourse();
+    }
+
+    /// <summary>
+    /// Архівує курс
+    /// </summary>
+    public void ArchiveCourse()
+    {
+        _stateContext.ArchiveCourse();
+    }
+
+    /// <summary>
+    /// Повертає курс до стану Draft
+    /// </summary>
+    public void RevertToDraft()
+    {
+        _stateContext.RevertToDraft();
     }
 
     /// <summary>

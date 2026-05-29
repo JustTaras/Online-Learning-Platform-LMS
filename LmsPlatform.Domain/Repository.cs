@@ -11,7 +11,7 @@ public class Repository<T> where T : Entity
     /// <summary>
     /// Додає сутність до репозиторію
     /// </summary>
-    public void Add(T item)
+    public virtual void Add(T item)
     {
         if (item == null)
             throw new ArgumentNullException(nameof(item));
@@ -25,7 +25,7 @@ public class Repository<T> where T : Entity
     /// <summary>
     /// Видаляє сутність з репозиторію за ID
     /// </summary>
-    public bool Remove(Guid id)
+    public virtual bool Remove(Guid id)
     {
         var item = _items.FirstOrDefault(x => x.Id == id);
         if (item == null)
@@ -38,7 +38,7 @@ public class Repository<T> where T : Entity
     /// <summary>
     /// Повертає всі сутності
     /// </summary>
-    public IReadOnlyList<T> GetAll()
+    public virtual IReadOnlyList<T> GetAll()
     {
         return _items.AsReadOnly();
     }

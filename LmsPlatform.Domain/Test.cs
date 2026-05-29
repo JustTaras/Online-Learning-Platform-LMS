@@ -1,5 +1,7 @@
 namespace LmsPlatform.Domain;
 
+using LmsPlatform.Domain.Strategy;
+
 /// <summary>
 /// Сутність "Тест"
 /// </summary>
@@ -8,6 +10,7 @@ public class Test : Entity, IValidatable
     private string _title = string.Empty;
     private string _description = string.Empty;
     private int _totalQuestions;
+    private ITestGradingStrategy _gradingStrategy = null!;
 
     /// <summary>
     /// Назва тесту
@@ -58,13 +61,65 @@ public class Test : Entity, IValidatable
     }
 
     /// <summary>
-    /// Конструктор тесту
+    /// Поточна стратегія оцінювання
+    /// </summary>
+    public ITestGradingStrategy GradingStrategy
+    {
+        get => _gradingStrategy;
+        private set
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value), "Стратегія оцінювання не може бути null.");
+            
+            _gradingStrategy = value;
+        }
+    }
+
+    /// <summary>
+    /// Конструктор тесту зі стратегією оцінювання
+    /// </summary>
+    public Test(string title, string description, int totalQuestions, ITestGradingStrategy gradingStrategy)
+    {
+        Title = title;
+        Description = description;
+        TotalQuestions = totalQuestions;
+        GradingStrategy = gradingStrategy ?? throw new ArgumentNullException(nameof(gradingStrategy));
+    }
+
+    /// <summary>
+    /// Конструктор тесту зі стратегією оцінювання за замовчуванням (PassFailGradingStrategy)
     /// </summary>
     public Test(string title, string description, int totalQuestions)
     {
         Title = title;
         Description = description;
         TotalQuestions = totalQuestions;
+        GradingStrategy = new PassFailGradingStrategy();
+    }
+
+    /// <summary>
+    /// Змінює стратегію оцінювання
+    /// </summary>
+    public void SetGradingStrategy(ITestGradingStrategy strategy)
+    {
+        GradingStrategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+    }
+
+    /// <summary>
+    /// Обчислює оцінку на основі поточної стратегії
+    /// </summary>
+    public double CalculateScore(int correctAnswers)
+    {
+        return _gradingStrategy.CalculateScore(correctAnswers, _totalQuestions);
+    }
+
+    /// <summary>
+    /// Перевіряє чи пройдено тест на основі поточної стратегії
+    /// </summary>
+    public bool IsPassed(int correctAnswers)
+    {
+        var score = _gradingStrategy.CalculateScore(correctAnswers, _totalQuestions);
+        return _gradingStrategy.IsPassed(score);
     }
 
     /// <summary>
